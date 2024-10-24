@@ -13,4 +13,8 @@ export class UpdateProductDto extends PartialType(CreateProductDto) {
   @IsOptional()
   @Type(() => Number)
   public price?: number;
+
+  @IsNumber()
+  @IsPositive()
+  public id: number;
 }
