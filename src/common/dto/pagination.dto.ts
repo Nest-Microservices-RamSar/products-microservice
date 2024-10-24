@@ -9,7 +9,6 @@ export class PaginationDto {
 
   @IsNumber()
   @IsPositive()
-  @Min(1)
   @Type(() => Number)
   public limit?: number = 10;
 }
