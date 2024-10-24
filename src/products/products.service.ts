@@ -96,7 +96,6 @@ export class ProductsService extends PrismaClient implements OnModuleInit {
   }
 
   async hardDelete(id: number) {
-    await this.findOne(id);
     return this.product.delete({
       where: { id },
     });
