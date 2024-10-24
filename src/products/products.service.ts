@@ -1,13 +1,15 @@
 import {
+  HttpStatus,
   Injectable,
   Logger,
   NotFoundException,
   OnModuleInit,
 } from '@nestjs/common';
-import { CreateProductDto } from './dto/create-product.dto';
-import { UpdateProductDto } from './dto/update-product.dto';
+import { RpcException } from '@nestjs/microservices';
 import { PrismaClient } from '@prisma/client';
 import { PaginationDto } from 'src/common';
+import { CreateProductDto } from './dto/create-product.dto';
+import { UpdateProductDto } from './dto/update-product.dto';
 
 @Injectable()
 export class ProductsService extends PrismaClient implements OnModuleInit {
@@ -19,9 +21,18 @@ export class ProductsService extends PrismaClient implements OnModuleInit {
   }
 
   create(createProductDto: CreateProductDto) {
-    return this.product.create({
+    const product = this.product.create({
       data: createProductDto,
     });
+
+    if (!product) {
+      throw new RpcException({
+        status: 401,
+        message: 'Failed to create product',
+      });
+    }
+
+    return product;
   }
 
   async findAll(paginationDto: PaginationDto) {
@@ -33,10 +44,12 @@ export class ProductsService extends PrismaClient implements OnModuleInit {
       },
     });
     const totalPages = Math.ceil(totalItems / limit);
-    const lastPage = totalPages > 0 ? totalPages : 1;
 
-    if (page > lastPage) {
-      throw new NotFoundException('Page not found');
+    if (page > totalPages) {
+      throw new RpcException({
+        message: `Page not found`,
+        status: HttpStatus.NOT_FOUND,
+      });
     }
 
     return {
@@ -45,7 +58,6 @@ export class ProductsService extends PrismaClient implements OnModuleInit {
         limit,
         totalPages,
         totalItems,
-        lastPage,
       },
       data: await this.product.findMany({
         skip: (page - 1) * limit,
@@ -66,7 +78,10 @@ export class ProductsService extends PrismaClient implements OnModuleInit {
     });
 
     if (!product) {
-      throw new NotFoundException(`Product with ID: #${id} not found.`);
+      throw new RpcException({
+        message: `Product with ID: #${id} not found.`,
+        status: HttpStatus.NOT_FOUND,
+      });
     }
 
     return product;
