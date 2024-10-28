@@ -49,4 +49,9 @@ export class ProductsController {
   hardDelete(@Param('id', ParseIntPipe) id: number) {
     return this.productsService.hardDelete(id);
   }
+
+  @MessagePattern({ cmd: 'validate_products' })
+  validateProduct(@Payload() productIds: number[]) {
+    return this.productsService.validateProducts(productIds);
+  }
 }
