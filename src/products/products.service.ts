@@ -36,11 +36,30 @@ export class ProductsService extends PrismaClient implements OnModuleInit {
   }
 
   async findAll(paginationDto: PaginationDto) {
-    const { page, limit, keyword } = paginationDto;
+    const {
+      page = 1,
+      limit = 10,
+      offset = 0,
+      keyword,
+      sortBy = 'updatedAt',
+      sortOrder = 'DESC',
+      sortFields = [],
+    } = paginationDto;
 
+    // Calcular el skip en base a `page` y `limit` o usar el `offset`
+    const skip = offset || (page - 1) * limit;
+
+    // Obtener el conteo total de elementos activos
     const totalItems = await this.product.count({
       where: {
         isActive: true,
+        ...(keyword && {
+          OR: [
+            { name: { contains: keyword, mode: 'insensitive' } },
+            { description: { contains: keyword, mode: 'insensitive' } },
+            // Agrega más campos de búsqueda según sea necesario
+          ],
+        }),
       },
     });
     const totalPages = Math.ceil(totalItems / limit);
@@ -52,6 +71,29 @@ export class ProductsService extends PrismaClient implements OnModuleInit {
       });
     }
 
+    // Configuración de campos de ordenamiento
+    const orderBy = sortFields.length
+      ? sortFields.map((field) => ({ [field]: sortOrder }))
+      : [{ [sortBy]: sortOrder }];
+
+    // Consulta principal con paginación, filtros, búsqueda y ordenamiento
+    const data = await this.product.findMany({
+      skip,
+      take: limit,
+      where: {
+        isActive: true,
+        ...(keyword && {
+          OR: [
+            { name: { contains: keyword, mode: 'insensitive' } },
+            // Agrega más campos de búsqueda según sea necesario
+            // { description: { contains: keyword, mode: 'insensitive' } },
+          ],
+        }),
+      },
+      orderBy,
+    });
+
+    // Respuesta con los datos y la metadata de paginación
     return {
       meta: {
         page,
@@ -59,16 +101,7 @@ export class ProductsService extends PrismaClient implements OnModuleInit {
         totalPages,
         totalItems,
       },
-      data: await this.product.findMany({
-        skip: (page - 1) * limit,
-        take: limit,
-        where: {
-          isActive: true,
-          name: {
-            contains: keyword,
-          },
-        },
-      }),
+      data,
     };
   }
 
