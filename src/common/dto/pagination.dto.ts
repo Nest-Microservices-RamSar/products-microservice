@@ -1,5 +1,11 @@
 import { Type } from 'class-transformer';
-import { IsNumber, IsPositive, Min } from 'class-validator';
+import {
+  IsNumber,
+  IsOptional,
+  IsPositive,
+  IsString,
+  Min,
+} from 'class-validator';
 
 export class PaginationDto {
   @IsNumber()
@@ -11,4 +17,8 @@ export class PaginationDto {
   @IsPositive()
   @Type(() => Number)
   public limit?: number = 10;
+
+  @IsString()
+  @IsOptional()
+  public keyword?: string = '';
 }

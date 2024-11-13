@@ -36,7 +36,7 @@ export class ProductsService extends PrismaClient implements OnModuleInit {
   }
 
   async findAll(paginationDto: PaginationDto) {
-    const { page, limit } = paginationDto;
+    const { page, limit, keyword } = paginationDto;
 
     const totalItems = await this.product.count({
       where: {
@@ -64,6 +64,9 @@ export class ProductsService extends PrismaClient implements OnModuleInit {
         take: limit,
         where: {
           isActive: true,
+          name: {
+            contains: keyword,
+          },
         },
       }),
     };
