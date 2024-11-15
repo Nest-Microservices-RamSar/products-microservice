@@ -46,22 +46,18 @@ export class ProductsService extends PrismaClient implements OnModuleInit {
       sortFields = [],
     } = paginationDto;
 
-    // Calcular el skip en base a `page` y `limit` o usar el `offset`
     const skip = offset || (page - 1) * limit;
 
-    // Obtener el conteo total de elementos activos
+    // Total items count
     const totalItems = await this.product.count({
       where: {
         isActive: true,
         ...(keyword && {
-          OR: [
-            { name: { contains: keyword, mode: 'insensitive' } },
-            { description: { contains: keyword, mode: 'insensitive' } },
-            // Agrega más campos de búsqueda según sea necesario
-          ],
+          OR: [{ name: { contains: keyword } }],
         }),
       },
     });
+
     const totalPages = Math.ceil(totalItems / limit);
 
     if (page > totalPages) {
@@ -71,29 +67,24 @@ export class ProductsService extends PrismaClient implements OnModuleInit {
       });
     }
 
-    // Configuración de campos de ordenamiento
+    // Set up ordering
     const orderBy = sortFields.length
       ? sortFields.map((field) => ({ [field]: sortOrder }))
       : [{ [sortBy]: sortOrder }];
 
-    // Consulta principal con paginación, filtros, búsqueda y ordenamiento
+    // Main query with pagination and filters
     const data = await this.product.findMany({
       skip,
       take: limit,
       where: {
         isActive: true,
         ...(keyword && {
-          OR: [
-            { name: { contains: keyword, mode: 'insensitive' } },
-            // Agrega más campos de búsqueda según sea necesario
-            // { description: { contains: keyword, mode: 'insensitive' } },
-          ],
+          OR: [{ name: { contains: keyword } }],
         }),
       },
       orderBy,
     });
 
-    // Respuesta con los datos y la metadata de paginación
     return {
       meta: {
         page,
