@@ -36,63 +36,24 @@ export class ProductsService extends PrismaClient implements OnModuleInit {
   }
 
   async findAll(paginationDto: PaginationDto) {
-    const {
-      page = 1,
-      limit = 10,
-      offset = 0,
-      keyword,
-      sortBy = 'updatedAt',
-      sortOrder = 'DESC',
-      sortFields = [],
-    } = paginationDto;
+    const { page, limit } = paginationDto;
 
-    const skip = offset || (page - 1) * limit;
-
-    // Total items count
-    const totalItems = await this.product.count({
-      where: {
-        isActive: true,
-        ...(keyword && {
-          OR: [{ name: { contains: keyword } }],
-        }),
-      },
-    });
-
-    const totalPages = Math.ceil(totalItems / limit);
-
-    if (page > totalPages) {
-      throw new RpcException({
-        message: `Page not found`,
-        status: HttpStatus.NOT_FOUND,
-      });
-    }
-
-    // Set up ordering
-    const orderBy = sortFields.length
-      ? sortFields.map((field) => ({ [field]: sortOrder }))
-      : [{ [sortBy]: sortOrder }];
-
-    // Main query with pagination and filters
-    const data = await this.product.findMany({
-      skip,
-      take: limit,
-      where: {
-        isActive: true,
-        ...(keyword && {
-          OR: [{ name: { contains: keyword } }],
-        }),
-      },
-      orderBy,
-    });
+    const totalPages = await this.product.count({ where: { isActive: true } });
+    const lastPage = Math.ceil(totalPages / limit);
 
     return {
+      data: await this.product.findMany({
+        skip: (page - 1) * limit,
+        take: limit,
+        where: {
+          isActive: true,
+        },
+      }),
       meta: {
-        page,
-        limit,
-        totalPages,
-        totalItems,
+        total: totalPages,
+        page: page,
+        lastPage: lastPage,
       },
-      data,
     };
   }
 
